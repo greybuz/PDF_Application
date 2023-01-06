@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun createPDFFile(path: String) {
         if (File(path).exists()) {
-//            File(path).delete()
+            File(path).delete()
         }
         Log.d("Ugorji Path", File(path).toString())
 
