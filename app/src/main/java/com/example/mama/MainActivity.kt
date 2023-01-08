@@ -135,12 +135,9 @@ class MainActivity : AppCompatActivity() {
             printPDF()
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
-//            Log.e("Ugorji", "createPDFFile: ", e)
         } catch (e: DocumentException) {
-            Log.e("Ugorji", "createPDFFile: ", e)
             e.printStackTrace()
         } catch (e: IOException) {
-            Log.e("Ugorji", "createPDFFile: ", e)
             e.printStackTrace()
         }
     }
