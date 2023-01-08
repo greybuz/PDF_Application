@@ -9,73 +9,61 @@ import android.print.PrintAttributes
 import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
 import android.util.Log
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
+import java.io.*
 
-class PdfDocumentAdapter(context: Context, path: String): PrintDocumentAdapter() {
 
-    internal var context: Context? = null
-    internal var path = ""
-
-    init {
-        this.context = context
-        this.path = path
-    }
-
+class PdfDocumentAdapter(var context: Context, var path: String) :
+    PrintDocumentAdapter() {
     override fun onLayout(
-        p0: PrintAttributes?,
-        p1: PrintAttributes?,
-        cancellationSignal: CancellationSignal?,
-        layoutResultCallback: LayoutResultCallback?,
-        p4: Bundle?
+        oldAttributes: PrintAttributes,
+        printAttributes1: PrintAttributes,
+        cancellationSignal: CancellationSignal,
+        layoutResultCallback: LayoutResultCallback,
+        extras: Bundle
     ) {
-        if (cancellationSignal!!.isCanceled)
-            layoutResultCallback!!.onLayoutCancelled()
-        else {
+        if (cancellationSignal.isCanceled) layoutResultCallback.onLayoutCancelled() else {
             val builder = PrintDocumentInfo.Builder("file name")
             builder.setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                 .setPageCount(PrintDocumentInfo.PAGE_COUNT_UNKNOWN)
                 .build()
-            layoutResultCallback!!.onLayoutFinished(builder.build(), p1 != p0)
+            layoutResultCallback.onLayoutFinished(
+                builder.build(),
+                printAttributes1 != printAttributes1
+            )
         }
     }
 
     override fun onWrite(
-        pageRanges: Array<out PageRange>?,
-        parcelFileDescriptor: ParcelFileDescriptor?,
-        cancellationSignal: CancellationSignal?,
-        writeResultCallback: WriteResultCallback?
+        pages: Array<PageRange>,
+        parcelFileDescriptor: ParcelFileDescriptor,
+        cancellationSignal: CancellationSignal,
+        writeResultCallback: WriteResultCallback
     ) {
         var `in`: InputStream? = null
         var out: OutputStream? = null
         try {
             val file = File(path)
             `in` = FileInputStream(file)
-            out = FileOutputStream(parcelFileDescriptor!!.fileDescriptor)
-
-            if(!cancellationSignal!!.isCanceled) {
-                `in`.copyTo(out)
-                writeResultCallback!!.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+            out = FileOutputStream(parcelFileDescriptor.fileDescriptor)
+            val buff = ByteArray(16384)
+            var size: Int
+            while (`in`.read(buff).also { size = it } >= 0 && !cancellationSignal.isCanceled) {
+                out.write(buff, 0, size)
             }
-
-            else
-                writeResultCallback!!.onWriteCancelled()
+            if (cancellationSignal.isCanceled) writeResultCallback.onWriteCancelled() else {
+                writeResultCallback.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+            }
         } catch (e: Exception) {
-            writeResultCallback!!.onWriteFailed(e.message)
-            Log.e("Ugorji", e.message + "")
+            writeResultCallback.onWriteFailed(e.message)
+            Log.e("Harshita", e.message!!)
+            e.printStackTrace()
         } finally {
             try {
                 `in`!!.close()
                 out!!.close()
-            } catch (e: IOException) {
-                Log.e("Ugorji", e.message + "")
+            } catch (ex: IOException) {
+                Log.e("Harshita", "" + ex.message)
             }
         }
     }
-
-
 }

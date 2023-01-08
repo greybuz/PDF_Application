@@ -1,17 +1,17 @@
 package com.example.mama
 
 import android.Manifest
-import android.content.Context
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
 import android.print.PrintManager
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.itextpdf.text.*
 import com.itextpdf.text.pdf.BaseFont
-import com.itextpdf.text.pdf.PdfDocument
 import com.itextpdf.text.pdf.PdfWriter
 import com.itextpdf.text.pdf.draw.LineSeparator
 import com.itextpdf.text.pdf.draw.VerticalPositionMark
@@ -22,181 +22,177 @@ import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
+
 
 class MainActivity : AppCompatActivity() {
-
-    val file_name: String = "test_pdf.pdf"
-
+    var btn_create_pdf: Button? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        val createPDFButton: Button = findViewById(R.id.btn_create_pdf)
-
+        btn_create_pdf = findViewById<View>(R.id.btn_create_pdf) as Button
         Dexter.withActivity(this)
             .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            .withListener(object: PermissionListener {
-                override fun onPermissionGranted(p0: PermissionGrantedResponse?) {
-                    Toast.makeText(this@MainActivity, "Granted", Toast.LENGTH_SHORT).show()
-                    createPDFButton.setOnClickListener {
-                        Log.d("Ugorji Path",Common.getAppPath(this@MainActivity)+file_name )
-                        createPDFFile(Common.getAppPath(this@MainActivity)+file_name)
-                    }
+            .withListener(object : PermissionListener {
+                override fun onPermissionGranted(permissionGrantedResponse: PermissionGrantedResponse) {
+                    btn_create_pdf!!.setOnClickListener { createPDFFile(Common.getAppPath(this@MainActivity) + "test_pdf.pdf") }
                 }
 
-                override fun onPermissionDenied(p0: PermissionDeniedResponse?) {
-                }
-
+                override fun onPermissionDenied(permissionDeniedResponse: PermissionDeniedResponse) {}
                 override fun onPermissionRationaleShouldBeShown(
-                    p0: PermissionRequest?,
-                    p1: PermissionToken?
+                    permissionRequest: PermissionRequest,
+                    permissionToken: PermissionToken
                 ) {
-
                 }
-
             })
             .check()
     }
 
     private fun createPDFFile(path: String) {
-        if (File(path).exists()) {
-            File(path).delete()
-        }
-        Log.d("Ugorji Path", File(path).toString())
-
+        val date = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date())
+        if (File(path).exists()) File(path).delete()
+//        Log.e("Ugorji", "createPDFFile: ")
         try {
             val document = Document()
             //Save
             PdfWriter.getInstance(document, FileOutputStream(path))
-            //Open to write
+            //open to write
             document.open()
-
-            //Setting
+            //Settings
             document.pageSize = PageSize.A4
             document.addCreationDate()
-            document.addAuthor("Austin")
-            document.addCreator("Ugorji")
+            document.addAuthor("Harshita")
+            document.addCreator("Harshita Bambure")
 
-            //Font Setting
+            //Font Settings
             val colorAccent = BaseColor(0, 153, 204, 255)
-            val headingFontSize = 20.0f
+            val fontSizeHeader = 20.0f
+            val fontSizeBody = 16.0f
             val valueFontSize = 26.0f
 
-            //Custom Font
+            //Custom font
             val fontName = BaseFont.createFont("assets/fonts/brandon_medium.otf", "UTF-8", BaseFont.EMBEDDED)
 
-            //Add title to document
-            val titleStyle = Font(fontName, 36.0f, Font.NORMAL, BaseColor.BLACK)
-            addNewItem(document, "Order Details", Element.ALIGN_CENTER, titleStyle)
+            //create title of document
+            val titleFont = Font(fontName, 20.0f, Font.NORMAL, BaseColor.BLACK)
+            addNewItem(document, "Order Deatils", Element.ALIGN_CENTER, titleFont)
 
-            val headingStyle = Font(fontName, headingFontSize, Font.NORMAL, colorAccent)
-            addNewItem(document, "Order No:", Element.ALIGN_LEFT, headingStyle)
-            val valueStyle = Font(fontName, valueFontSize, Font.NORMAL, BaseColor.BLACK)
-            addNewItem(document, "#123123", Element.ALIGN_LEFT, headingStyle)
+            // Add more
+            val orderNumberFont = Font(fontName, fontSizeHeader, Font.NORMAL, colorAccent)
+            addNewItem(document, "order number", Element.ALIGN_LEFT, orderNumberFont)
+            val orderNumberValueFont = Font(fontName, valueFontSize, Font.NORMAL, BaseColor.BLACK)
+            addNewItem(document, "#525263", Element.ALIGN_LEFT, orderNumberValueFont)
+            addLineSeperator(document)
+            addNewItem(document, "Order Date", Element.ALIGN_LEFT, orderNumberFont)
+            addNewItem(document, date, Element.ALIGN_LEFT, orderNumberValueFont)
+            addLineSeperator(document)
+            addNewItem(document, "Account name", Element.ALIGN_LEFT, orderNumberFont)
+            addNewItem(document, "Harshita", Element.ALIGN_LEFT, orderNumberValueFont)
+            addLineSeperator(document)
 
-            addLineSeparator(document)
-
-            addNewItem(document, "Order Date:", Element.ALIGN_LEFT, headingStyle)
-            addNewItem(document, "03/08/2019", Element.ALIGN_LEFT, headingStyle)
-
-            addLineSeparator(document)
-
-            addNewItem(document, "Account Name:", Element.ALIGN_LEFT, headingStyle)
-            addNewItem(document, "Austin Ugorji", Element.ALIGN_LEFT, headingStyle)
-
-            addLineSeparator(document)
-
-
-            //Product detail
+            //Add product order detail
             addLineSpace(document)
-            addNewItem(document, "Product Details", Element.ALIGN_CENTER, titleStyle)
+            addNewItem(document, "Product details", Element.ALIGN_CENTER, titleFont)
+            addLineSeperator(document)
 
-            addLineSeparator(document)
+            //item 1
+            addNewItemWithLeftAndRight(
+                document,
+                "Burger",
+                "(1.0%)",
+                titleFont,
+                orderNumberValueFont
+            )
+            addNewItemWithLeftAndRight(document, "20", "1200.0", titleFont, orderNumberValueFont)
+            addLineSeperator(document)
 
-            //Item1
-            addNewItemWithLeftAndRight(document, "Pizza 25", "(0.0%)", titleStyle, valueStyle)
-            addNewItemWithLeftAndRight(document, "12.0*1000", "12000.0", titleStyle, valueStyle)
+            //item 2
+            addNewItemWithLeftAndRight(document, "Pizza", "(0.0%)", titleFont, orderNumberValueFont)
+            addNewItemWithLeftAndRight(document, "12", "1520.0", titleFont, orderNumberValueFont)
+            addLineSeperator(document)
 
-            addLineSeparator(document)
-
-            //Item2
-            addNewItemWithLeftAndRight(document, "Pizza 26", "(0.0%)", titleStyle, valueStyle)
-            addNewItemWithLeftAndRight(document, "12.0*1000", "12000.0", titleStyle, valueStyle)
-
-            addLineSeparator(document)
+            //item 3
+            addNewItemWithLeftAndRight(
+                document,
+                "Sandwich",
+                "(0.0%)",
+                titleFont,
+                orderNumberValueFont
+            )
+            addNewItemWithLeftAndRight(document, "10", "1000.0", titleFont, orderNumberValueFont)
+            addLineSeperator(document)
 
             //Total
             addLineSpace(document)
             addLineSpace(document)
-
-            addNewItemWithLeftAndRight(document, "Total", "24000.0", titleStyle, valueStyle)
-
-            //close
+            addNewItemWithLeftAndRight(document, "total", "8500", titleFont, orderNumberValueFont)
             document.close()
-
-            Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show()
-
+            Toast.makeText(this, "Sucess", Toast.LENGTH_SHORT).show()
             printPDF()
-
-
-        } catch (e: Exception) {
-            Log.e("Ugorjiiii", ""+ e.message)
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+//            Log.e("Ugorji", "createPDFFile: ", e)
+        } catch (e: DocumentException) {
+            Log.e("Ugorji", "createPDFFile: ", e)
+            e.printStackTrace()
+        } catch (e: IOException) {
+            Log.e("Ugorji", "createPDFFile: ", e)
+            e.printStackTrace()
         }
     }
 
-    private fun printPDF() {
-        val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
-        try {
-            val printAdapter = PdfDocumentAdapter(this@MainActivity, Common.getAppPath(this@MainActivity)+file_name)
-            printManager.print("Document", printAdapter, PrintAttributes.Builder().build())
-        }catch (e: Exception) {
-            Log.e("Ugorji", "" + e, )
-        }
+    @Throws(DocumentException::class)
+    private fun addNewItem(document: Document, text: String, align: Int, font: Font) {
+        val chunk = Chunk(text, font)
+        val paragraph = Paragraph(chunk)
+        paragraph.alignment = align
+        document.add(paragraph)
     }
-
 
     @Throws(DocumentException::class)
     private fun addNewItemWithLeftAndRight(
         document: Document,
         textLeft: String,
         textRight: String,
-        leftStyle: Font,
-        rightStyle: Font
+        textLeftFont: Font,
+        textRightFont: Font
     ) {
-        val chunkTextLeft = Chunk(textLeft, leftStyle)
-        val chunkTextRight = Chunk(textRight, rightStyle)
+        val chunkTextLeft = Chunk(textLeft, textLeftFont)
+        val chunkTextRight = Chunk(textRight, textRightFont)
         val p = Paragraph(chunkTextLeft)
         p.add(Chunk(VerticalPositionMark()))
         p.add(chunkTextRight)
         document.add(p)
     }
 
-
     @Throws(DocumentException::class)
-    private fun addLineSeparator(document: Document) {
+    private fun addLineSeperator(document: Document) {
         val lineSeparator = LineSeparator()
         lineSeparator.lineColor = BaseColor(0, 0, 0, 68)
         addLineSpace(document)
         document.add(Chunk(lineSeparator))
-        addLineSpace(document)
-
     }
-
 
     @Throws(DocumentException::class)
     private fun addLineSpace(document: Document) {
         document.add(Paragraph(""))
     }
 
-    @Throws(DocumentException::class)
-    private fun addNewItem(document: Document, text: String, align: Int, style: Font) {
-        val chunk = Chunk(text, style)
-        val p = Paragraph(chunk)
-        p.alignment = align
-        document.add(p)
-
+    private fun printPDF() {
+        val printManager = getSystemService(PRINT_SERVICE) as PrintManager
+        try {
+            val printDocumentAdapter: PrintDocumentAdapter = PdfDocumentAdapter(
+                this@MainActivity,
+                Common.getAppPath(this@MainActivity) + "test_pdf.pdf"
+            )
+            printManager.print("Document", printDocumentAdapter, PrintAttributes.Builder().build())
+        } catch (ex: Exception) {
+            Log.e("Harshita", "" + ex.message)
+            Toast.makeText(this@MainActivity, "Can't read pdf file", Toast.LENGTH_SHORT).show()
+        }
     }
-
 }
-
